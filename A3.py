@@ -1,4 +1,6 @@
 import random
+import numpy as np
+import matplotlib.pyplot as plt
 
 class WindyGrid:
     def __init__(self, dimension, wind_arr, start, goal):
@@ -45,11 +47,11 @@ class WindyGrid:
     def addWind(self):
         # print("self.loc[1]", self.loc[1])
         wind = self.wind_arr[self.loc[1]]
-        print("wind =", wind)
-        newLoc = (self.loc[0], self.loc[1] - wind)
+        # print("wind =", wind)
+        newLoc = (self.loc[0] - wind, self.loc[1])
         # if not in bound after adding wind, just "blow" it to as high as possible
         if not self.inBound(newLoc[0], newLoc[1]):
-            newLoc = (self.loc[0], 0)
+            newLoc = (0, self.loc[1])
         self.loc = newLoc
 
     def takeAction(self, actionIdx):
@@ -61,7 +63,7 @@ class WindyGrid:
             # print("1, down")
             newLoc = (self.loc[0] + 1, self.loc[1])
         elif actionIdx == 2:
-            # print("2, right")
+            # print("takeAction: 2, right")
             newLoc = (self.loc[0], self.loc[1] + 1) 
         else:
             # print("3, left")
@@ -90,7 +92,7 @@ class WindyGrid:
     
     def randomAction(self):
         action = random.randrange(4)
-        print("taking random action: ", self.numberToAction(action))
+        # print("random action: taking random action: ", self.numberToAction(action))
         return action
 
     def greedyAction(self):
@@ -117,9 +119,10 @@ class WindyGrid:
     def getEpsilonGreedyAction(self, epsilon):
         rand_num = random.random()
         if rand_num < epsilon:
-            print("random action")
+            # print("Epsilon greedy: random action")
             return self.randomAction()
         else:
+            # print("Epsilon greedy: greedy action")
             return self.greedyAction()
 
 def sarsa_on_policy(grid, total_steps):
@@ -133,9 +136,15 @@ def sarsa_on_policy(grid, total_steps):
         action1 = grid.getEpsilonGreedyAction(epsilon)
 
         while not grid.atGoal() and time_step <= total_steps:
+            # print("state1:", state1)
+            # print("action1:", grid.numberToAction(action1))
             reward = grid.takeAction(action1)
             state2 = grid.loc
+            # print("reward:", reward)
+            # print("state2:", state2)
             action2 = grid.getEpsilonGreedyAction(epsilon)
+            # print("action2:", grid.numberToAction(action2))
+            # print()
 
             grid.updateQTable(state1, action1, reward, state2, action2)
             state1 = state2
@@ -147,19 +156,34 @@ def sarsa_on_policy(grid, total_steps):
             finished_episodes += 1
             grid.reset()
 
-    return (time_step, finished_episodes)
+    return (time_step, finished_episodes, finished_episodes_list)
 
-wind_arr = [0, 1]
-mini = WindyGrid((2, 2), wind_arr, (0, 0), (1, 1))
-(time_step, finished_episodes) = sarsa_on_policy(mini, 5)
-print("time_step", time_step)
-print("finished_episodes", finished_episodes)
-mini.print()
+total_steps = 8000
+random.seed(0)
+
+# wind_arr = [0, 1]
+# mini = WindyGrid((2, 2), wind_arr, (0, 0), (0, 1))
+# (time_step, finished_episodes, finished_episodes_list) = sarsa_on_policy(mini, total_steps)
+# mini.print()
 
 # sample grid from text book
-# wind_arr = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
-# grid = WindyGrid((7, 10), wind_arr, (3,0), (3, 7))
-# grid.print()
+wind_arr = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
+grid = WindyGrid((7, 10), wind_arr, (3,0), (3, 7))
+(time_step, finished_episodes, finished_episodes_list) = sarsa_on_policy(grid, total_steps)
+
+grid.print()
+print("time_step", time_step)
+print("finished_episodes", finished_episodes)
+
+x_axis = np.arange(len(finished_episodes_list))
+plt.title("Finished Episodes over Time Steps")
+plt.plot(x_axis, finished_episodes_list)
+plt.xlabel('Time Steps')
+plt.ylabel('Finished Episodes')
+plt.legend()
+plt.show()
+
+
 
 #         col0    col1
 # row0    S 
